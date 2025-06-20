@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Moon, Sun } from 'lucide-react'; // 👈 Icon imports
+import { Link } from 'react-router-dom';
 
 export default function Header() {
   const [isDark, setIsDark] = useState(() => {
@@ -34,10 +35,16 @@ export default function Header() {
       <h1 className="text-2xl font-bold text-blue-600 dark:text-white">DryCleanPro</h1>
 
       <nav className="flex items-center gap-4 text-gray-700 dark:text-gray-300 font-medium">
-        <a href="#">Home</a>
-        <a href="#">Services</a>
-        <a href="#">Pricing</a>
-        <a href="#">Contact</a>
+        <a href="/">Home</a>
+        <a href="http://localhost:5173/#services">Services</a>
+        <a href="http://localhost:5173/#pricing">Pricing</a>
+        <a href="http://localhost:5173/#contactUs">Contact</a>
+          <Link
+      to="/signup"
+      className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+    >
+      Sign Up
+    </Link>
 
         {/* Theme toggle button */}
         <button

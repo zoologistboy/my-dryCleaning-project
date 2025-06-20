@@ -9,12 +9,15 @@
   "dependencies": {
     "@tailwindcss/forms": "^0.3.2",
     "aos": "^2.3.4",
+    "axios": "^1.10.0",
+    "canvas-confetti": "^1.9.3",
     "lucide-react": "^0.517.0",
-    "react": "^17.0.0",
-    "react-dom": "^17.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "react-helmet": "^6.1.0",
+    "react-hot-toast": "^2.5.2",
     "react-router": "^5.2.0",
-    "react-router-dom": "^5.2.0",
+    "react-router-dom": "^7.6.2",
     "swiper": "^11.2.8"
   },
   "devDependencies": {
