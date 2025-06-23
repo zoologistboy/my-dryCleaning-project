@@ -1,6 +1,7 @@
 // src/context/AuthContext.jsx
 import { createContext } from 'react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { jwtDecode } from 'jwt-decode';
 
 export const AuthContext = createContext();
 
@@ -11,6 +12,28 @@ const AuthProvider = ({ children }) => {
   });
 
   const [token, setToken] = useState(() => localStorage.getItem('token') || '');
+  useEffect(() => {
+    if (token) {
+      try {
+        const decoded = jwtDecode(token);
+        const expiry = decoded.exp * 1000; // convert to ms
+        const now = Date.now();
+
+        if (expiry <= now) {
+          logout(); // 🔒 token already expired
+        } else {
+          const timeout = setTimeout(() => {
+            logout(); // ⏳ auto logout on expiry
+          }, expiry - now);
+
+          return () => clearTimeout(timeout); // cleanup
+        }
+      } catch (err) {
+        console.error('Invalid token:', err);
+        logout();
+      }
+    }
+  }, [token]);
 
   const login = (userData, accessToken) => {
     localStorage.setItem('user', JSON.stringify(userData));

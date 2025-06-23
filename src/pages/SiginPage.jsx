@@ -24,7 +24,10 @@ export default function SignInPage() {
     try {
       const res = await axios.post('http://localhost:3550/api/auth/login', formData);
       const { user, accessToken } = res.data;
-      login(token, user)
+
+      // console.log(res.data);
+      
+      login(user, accessToken)
 
       // Role-based redirect
       switch (user.role) {

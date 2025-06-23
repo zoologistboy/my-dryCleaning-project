@@ -21,6 +21,7 @@ import EmailSent from './pages/EmailSent';
 import SignInPage from './pages/SiginPage';
 import NotFound from './pages/ErrorPage';
 import AuthProvider from './contexts/AuthContext';
+import CustomerDashboard from './pages/Dashboard';
 
 
 function App() {
@@ -43,7 +44,7 @@ function App() {
                   <BelowHero />
                   <div id='services'><HowWeWork /></div>
                   <Testimonials />
-                 <div id='pricing'> <Pricing/></div>
+                  <div id='pricing'> <Pricing/></div>
                   <div id='contactUs'><ContactUsForm /></div>
                   <Faq />
                 </>
@@ -54,6 +55,8 @@ function App() {
            <Route path="/email-sent" element={<EmailSent />} />
            <Route path="/signin" element={<SignInPage />} />
            <Route path="*" element={<NotFound/>} />
+           <Route path="/dashboard" element={<CustomerDashboard />} />
+
 
             {/* Add /signin, /verify, etc. here */}
           </Routes>
