@@ -7,6 +7,14 @@
     "serve": "vite preview"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
+    "@fortawesome/fontawesome-svg-core": "^6.7.2",
+    "@fortawesome/free-brands-svg-icons": "^6.7.2",
+    "@fortawesome/free-solid-svg-icons": "^6.7.2",
+    "@fortawesome/react-fontawesome": "^0.2.2",
+    "@mui/icons-material": "^7.1.2",
+    "@mui/material": "^7.1.2",
     "@tailwindcss/forms": "^0.3.2",
     "aos": "^2.3.4",
     "axios": "^1.10.0",
@@ -19,6 +27,7 @@
     "react-hot-toast": "^2.5.2",
     "react-router": "^5.2.0",
     "react-router-dom": "^7.6.2",
+    "sonner": "^2.0.5",
     "swiper": "^11.2.8"
   },
   "devDependencies": {

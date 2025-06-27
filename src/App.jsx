@@ -22,6 +22,10 @@ import SignInPage from './pages/SiginPage';
 import NotFound from './pages/ErrorPage';
 import AuthProvider from './contexts/AuthContext';
 import CustomerDashboard from './pages/Dashboard';
+import { Toaster } from 'sonner';
+import UpdateProfile from './pages/UpdateUserProfile';
+import { ProfileProvider } from '../src/contexts/ProfileContext';
+import AuthRedirectHandler from './components/AuthRedirection';
 
 
 function App() {
@@ -31,10 +35,13 @@ function App() {
 
   return (
     <AuthProvider>
+      {/* <AuthRedirectHandler> */}
+    <ProfileProvider>
       <Router>
       <div className="flex flex-col min-h-screen">
         <Header />
         <main className="flex-grow pt-20 pb-20 px-4">
+           <AuthRedirectHandler />
           <Routes>
             <Route
               path="/"
@@ -56,6 +63,8 @@ function App() {
            <Route path="/signin" element={<SignInPage />} />
            <Route path="*" element={<NotFound/>} />
            <Route path="/dashboard" element={<CustomerDashboard />} />
+           <Route path="/profile" element={<UpdateProfile />} />
+
 
 
             {/* Add /signin, /verify, etc. here */}
@@ -63,8 +72,11 @@ function App() {
         </main>
         <Footer />
         <ScrollToTop />
+        <Toaster richColors visibleToasts={1}/>
       </div>
     </Router>
+    </ProfileProvider>
+    {/* </AuthRedirectHandler> */}
     </AuthProvider>
   );
 }

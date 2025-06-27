@@ -4,6 +4,9 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { AuthContext } from '../contexts/AuthContext';
+import { toast } from 'sonner';
+// import toast from 'react-hot-toast';
+
 
 export default function SignInPage() {
   const {user, token, login, logout} = useContext(AuthContext)
@@ -40,6 +43,7 @@ export default function SignInPage() {
         default:
           navigate('/dashboard');
       }
+      toast.success("Logged In Successfully")
     } catch (err) {
       setError(err.response?.data?.message || 'Something went wrong.');
     } finally {
