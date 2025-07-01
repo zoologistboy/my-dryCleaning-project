@@ -26,6 +26,16 @@ import { Toaster } from 'sonner';
 import UpdateProfile from './pages/UpdateUserProfile';
 import { ProfileProvider } from '../src/contexts/ProfileContext';
 import AuthRedirectHandler from './components/AuthRedirection';
+import BookService from './pages/Book';
+import ForgotPassword from './pages/ForgotPassword';
+import Home from './pages/Home';
+import ContactUs from './pages/ContactUs';
+import { Schedule } from '@mui/icons-material';
+import Confirmation from './pages/Confirmation';
+import WalletPage from './pages/Wallet';
+import OrderHistory from './pages/OrderHistory';
+import OrderDetails from './pages/OrderDetails';
+import { SocketProvider } from '../src/contexts/SocketContext';
 
 
 function App() {
@@ -37,6 +47,7 @@ function App() {
     <AuthProvider>
       {/* <AuthRedirectHandler> */}
     <ProfileProvider>
+      <SocketProvider>
       <Router>
       <div className="flex flex-col min-h-screen">
         <Header />
@@ -64,6 +75,16 @@ function App() {
            <Route path="*" element={<NotFound/>} />
            <Route path="/dashboard" element={<CustomerDashboard />} />
            <Route path="/profile" element={<UpdateProfile />} />
+           <Route path="/Book" element={<BookService />} />
+           <Route path="/forgot-password" element={<ForgotPassword />} />
+           <Route path="/home" element={<Home />} />
+           <Route path="/support" element={<ContactUs />} />
+           <Route path="/schedule" element={<Schedule />} />
+           <Route path="/confirmation" element={<Confirmation />} />
+           <Route path="/orders" element={<OrderHistory/>} />
+           <Route path="/wallet/topup" element={<WalletPage />} />
+           <Route path="/orders/:id" element={<OrderDetails />} />
+
 
 
 
@@ -75,6 +96,7 @@ function App() {
         <Toaster richColors visibleToasts={1}/>
       </div>
     </Router>
+    </SocketProvider>
     </ProfileProvider>
     {/* </AuthRedirectHandler> */}
     </AuthProvider>
