@@ -36,6 +36,9 @@ import WalletPage from './pages/Wallet';
 import OrderHistory from './pages/OrderHistory';
 import OrderDetails from './pages/OrderDetails';
 import { SocketProvider } from '../src/contexts/SocketContext';
+import Dashboard from './pages/admin/Dashboard';
+
+
 
 
 function App() {
@@ -82,8 +85,10 @@ function App() {
            <Route path="/schedule" element={<Schedule />} />
            <Route path="/confirmation" element={<Confirmation />} />
            <Route path="/orders" element={<OrderHistory/>} />
-           <Route path="/wallet/topup" element={<WalletPage />} />
+           <Route path="/wallet" element={<WalletPage />} />
            <Route path="/orders/:id" element={<OrderDetails />} />
+           <Route path="/admin/dashboard" element={<Dashboard />} />
+           {/* <Route path="/wallet" element={<Wallet />} /> */}
 
 
 

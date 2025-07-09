@@ -1,8 +1,11 @@
 import { useFlutterwave } from 'flutterwave-react-v3';
+import React from 'react';
+import { VITE_BASE_URL } from '../config';
+
 
 export default function PaymentProcessor({ order, onSuccess }) {
   const config = {
-    public_key: process.env.REACT_APP_FLW_PUBLIC_KEY,
+    public_key: "FLWPUBK_TEST-9df5304d2f0e1d8161e4ddfa4e1f4d63-X",
     tx_ref: `order_${order._id}_${Date.now()}`,
     amount: order.totalAmount,
     currency: 'NGN',
@@ -15,6 +18,7 @@ export default function PaymentProcessor({ order, onSuccess }) {
       title: 'FreshPress Payment',
       description: `Payment for Order #${order._id}`,
     },
+    
   };
 
   const handleFlutterPayment = useFlutterwave(config);

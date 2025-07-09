@@ -1,5 +1,6 @@
-import { createContext, useEffect, useState } from 'react';
+import React, { createContext, useEffect, useState, useContext } from 'react';
 import io from 'socket.io-client';
+import { VITE_BASE_URL } from '../config';
 
 export const SocketContext = createContext();
 
@@ -7,7 +8,7 @@ export function SocketProvider({ children }) {
   const [socket, setSocket] = useState(null);
 
   useEffect(() => {
-    const newSocket = io(import.meta.env.VITE_BASE_URL, {
+    const newSocket = io(VITE_BASE_URL, {
       withCredentials: true,
       auth: { token: localStorage.getItem('token') }
     });
@@ -24,4 +25,5 @@ export function SocketProvider({ children }) {
   );
 }
 
-// Wrap your App with this provider
+// ✅ ADD THIS HOOK:
+export const useSocket = () => useContext(SocketContext);

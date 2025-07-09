@@ -1,5 +1,7 @@
+import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import PaymentProcessor from '../components/PaymentProcessor';
+import PaymentProcessor from '../../src/components/PaymentProcessor';
+import { useFlutterwave } from 'flutterwave-react-v3';
 
 jest.mock('flutterwave-react-v3', () => ({
   useFlutterwave: jest.fn(() => jest.fn())

@@ -10,11 +10,12 @@ import axios from 'axios';
 import dryCleanIllustration from '../assets/illustration.webp';
 import laundryBasket from '../assets/images.jpg';
 import service1 from '../assets/images.jpg';
-import service2 from '../assets/hanged.jpg';
+import service2 from '../assets/hanged.jpg'; //welcome back, notification, recent order
 import service3 from '../assets/ironed.jpg';
 import service4 from '../assets/ironedBest.jpg';
 import service5 from '../assets/otherservices.jpg';
 import service6 from '../assets/folded.jpg';
+import { toast } from 'sonner';
 
 export default function CustomerDashboard() {
   const { profile } = useContext(ProfileContext);
@@ -25,8 +26,19 @@ export default function CustomerDashboard() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const notificationRef = useRef(null)
+  const notificationRef = useRef(null);
 
+  // Service images mapping
+  const serviceImages = {
+    'Wash': service1,
+    'Iron': service2,
+    'Dry Clean': service3,
+    'Fold': service4,
+    'Stain Removal': service5,
+    'Other': service6
+  };
+
+  // Handle click outside notifications dropdown
   const handleClickOutside = (event) => {
     if (notificationRef.current && !notificationRef.current.contains(event.target)) {
       setShowNotifications(false);
@@ -40,17 +52,7 @@ export default function CustomerDashboard() {
     };
   }, []);
 
-  // Service images mapping
-  const serviceImages = {
-    'Wash': service1,
-    'Iron': service2,
-    'Dry Clean': service3,
-    'Fold': service4,
-    'Stain Removal': service5,
-    'Other': service6
-  };
-
-  // Fetch orders on component mount
+  // Check authentication and fetch orders on component mount
   useEffect(() => {
     if (!user || !token || user.role !== "user") {
       localStorage.removeItem("token");
@@ -61,15 +63,21 @@ export default function CustomerDashboard() {
     }
   }, [user, token, navigate]);
 
+  // Fetch user orders
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const res = await axios.get('http://localhost:3550/api/orders/mine', {
+      const res = await axios.get(`http://localhost:3550/api/orders/my-orders`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setOrders(Array.isArray(res.data.orders) ? res.data.orders : []);
+      // console.log(res.data.data);
+      // console.log(res.data.data);
+      
+      
+      setOrders(Array.isArray(res.data.data) ? res.data.data : []);
     } catch (err) {
       console.error('Error fetching orders:', err);
+      toast.error('Failed to load orders. Please try again.');
       setOrders([]);
     } finally {
       setLoading(false);
@@ -82,30 +90,42 @@ export default function CustomerDashboard() {
     return order.status === activeTab;
   });
 
+ // console.log(filteredOrders);
+  
+
   const orderCount = orders.length;
   const unreadNotifications = user?.notifications?.filter(n => !n.seen).length || 0;
 
   // Status badge component
   const StatusBadge = ({ status }) => {
-    const statusColors = {
-      pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
-      processing: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-      completed: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-      cancelled: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
-      delivered: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
+    const statusConfig = {
+      pending: {
+        color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+        icon: <Clock className="w-3 h-3" />
+      },
+      processing: {
+        color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+        icon: <Settings className="w-3 h-3" />
+      },
+      completed: {
+        color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+        icon: <Check className="w-3 h-3" />
+      },
+      cancelled: {
+        color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+        icon: <X className="w-3 h-3" />
+      },
+      delivered: {
+        color: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+        icon: <Truck className="w-3 h-3" />
+      }
     };
 
-    const statusIcons = {
-      pending: <Clock className="w-3 h-3" />,
-      processing: <Settings className="w-3 h-3" />,
-      completed: <Check className="w-3 h-3" />,
-      cancelled: <X className="w-3 h-3" />,
-      delivered: <Truck className="w-3 h-3" />
-    };
+    const config = statusConfig[status] || statusConfig.pending;
 
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize flex items-center gap-1 ${statusColors[status]}`}>
-        {statusIcons[status]}
+      <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize flex items-center gap-1 ${config.color}`}>
+        {config.icon}
         {status}
       </span>
     );
@@ -114,18 +134,20 @@ export default function CustomerDashboard() {
   // Cancel order function
   const cancelOrder = async (orderId) => {
     try {
-      await axios.patch(`http://localhost:3550/api/orders/${orderId}/cancel`, {}, {
+      await axios.patch(`${process.env.REACT_APP_API_URL}/api/orders/${orderId}/cancel`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      toast.success('Order cancelled successfully');
       fetchOrders(); // Refresh orders
     } catch (error) {
       console.error('Error cancelling order:', error);
-      alert('Failed to cancel order. Please try again.');
+      toast.error(error.response?.data?.message || 'Failed to cancel order');
     }
   };
 
   // Reorder function
-  const reorder = (orderId) => {
+  const reorder = (orderId, e) => {
+    e.stopPropagation();
     const order = orders.find(o => o._id === orderId);
     if (order) {
       navigate('/book', { state: { services: order.services } });
@@ -135,12 +157,14 @@ export default function CustomerDashboard() {
   // Mark notifications as read
   const markAllAsRead = async () => {
     try {
-      await axios.patch('http://localhost:3550/api/notifications/mark-read', {}, {
+      await axios.patch(`${process.env.REACT_APP_API_URL}/api/notifications/mark-read`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setShowNotifications(false);
+      toast.success('Notifications marked as read');
     } catch (error) {
       console.error('Error marking notifications as read:', error);
+      toast.error('Failed to mark notifications as read');
     }
   };
 
@@ -162,18 +186,22 @@ export default function CustomerDashboard() {
     return new Date(dateString).toLocaleDateString('en-US', options);
   };
 
+  // Format currency
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-NG', {
+      style: 'currency',
+      currency: 'NGN'
+    }).format(amount).replace('NGN', '₦');
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
       {/* Sidebar - Desktop */}
       <aside className="hidden md:block w-64 bg-white dark:bg-gray-800 shadow-md">
         <div className="p-4 flex items-center justify-center border-b border-gray-200 dark:border-gray-700">
           <img src={laundryBasket} alt="Logo" className="h-10 mr-2" />
-          {/* <h1 className="text-xl font-bold text-blue-600 dark:text-blue-400">DryCleanPro</h1> */}
         </div>
 
-        {/* DryCleanPro */}
-        {/* welcome back */}
-        
         <nav className="p-4">
           <ul className="space-y-2">
             <li>
@@ -261,7 +289,10 @@ export default function CustomerDashboard() {
             <img src={laundryBasket} alt="Logo" className="h-10 mr-2" />
             <h1 className="text-xl font-bold text-blue-600 dark:text-blue-400">DryCleanPro</h1>
           </div>
-          <button onClick={() => setShowMobileMenu(false)} className="p-1 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700">
+          <button 
+            onClick={() => setShowMobileMenu(false)} 
+            className="p-1 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -345,107 +376,94 @@ export default function CustomerDashboard() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path>
               </svg>
             </button>
-            {/* <h1 className="text-xl font-bold text-blue-600 dark:text-blue-400">
-              Welcome back, {user?.firstName || 'Customer'}!
-            </h1> */}
+            <h1 className="text-xl font-bold text-gray-800 dark:text-white">
+              Welcome back, {profile?.fullName?.split(" ")[0] || 'Customer'}!
+            </h1>
           </div>
 
-          {/* DryCleanPro */}
-          
           <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-4">
-          <div ref={notificationRef}>
-            <button 
-              onClick={() => setShowNotifications(!showNotifications)}
-              className="relative p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
-            >
-              <Bell className="w-5 h-5" />
-              {unreadNotifications > 0 && (
-                <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                  {unreadNotifications}
-                </span>
-              )}
-            </button>
-
-            {showNotifications && (
-              <div className="absolute right-4 top-16 w-72 bg-white dark:bg-gray-800 rounded-md shadow-lg z-50 border border-gray-200 dark:border-gray-700">
-                {/* Dropdown content */}
-              </div>
-            )}
-          </div>
-          </div>
-
-            {/* <div className="relative">
+            <div ref={notificationRef} className="relative">
               <button 
-                className="flex items-center space-x-2 focus:outline-none"
-                onClick={() => navigate('/profile')}
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="relative p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
               >
-                <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white">
-                  {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
-                </div>
-                <span className="hidden md:inline">{user?.firstName}</span>
-              </button>
-            </div> */}
-          </div>
-
-          {/* Notifications dropdown */}
-          {showNotifications && (
-            <div className="absolute right-4 top-16 w-72 bg-white dark:bg-gray-800 rounded-md shadow-lg z-50 border border-gray-200 dark:border-gray-700">
-              <div className="p-2 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                <h3 className="font-medium">Notifications</h3>
-                <button 
-                  onClick={markAllAsRead}
-                  className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-                >
-                  Mark all as read
-                </button>
-              </div>
-              <div className="max-h-60 overflow-y-auto">
-                {user?.notifications?.length > 0 ? (
-                  user.notifications.slice(0, 5).map((notification, index) => (
-                    <div 
-                      key={index}
-                      className={`p-3 border-b border-gray-100 dark:border-gray-700 ${!notification.seen ? 'bg-blue-50 dark:bg-gray-700' : ''}`}
-                    >
-                      <div className="flex items-start gap-2">
-                        <div className={`p-1 rounded-full ${!notification.seen ? 'bg-blue-100 dark:bg-blue-900' : 'bg-gray-100 dark:bg-gray-600'}`}>
-                          {notification.type === 'order' ? (
-                            <Shirt className="w-4 h-4" />
-                          ) : notification.type === 'payment' ? (
-                            <CreditCard className="w-4 h-4" />
-                          ) : (
-                            <AlertCircle className="w-4 h-4" />
-                          )}
-                        </div>
-                        <div>
-                          <p className="text-sm">{notification.message}</p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            {new Date(notification.createdAt).toLocaleString()}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="p-4 text-center text-gray-500">No notifications</div>
+                <Bell className="w-5 h-5" />
+                {unreadNotifications > 0 && (
+                  <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    {unreadNotifications}
+                  </span>
                 )}
-              </div>
-              {user?.notifications?.length > 5 && (
-                <div className="p-2 text-center border-t border-gray-200 dark:border-gray-700">
-                  <button 
-                    onClick={() => navigate('/notifications')}
-                    className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-                  >
-                    View all notifications
-                  </button>
+              </button>
+
+              {showNotifications && (
+                <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-gray-800 rounded-md shadow-lg z-50 border border-gray-200 dark:border-gray-700">
+                  <div className="p-2 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                    <h3 className="font-medium">Notifications</h3>
+                    <button 
+                      onClick={markAllAsRead}
+                      className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                    >
+                      Mark all as read
+                    </button>
+                  </div>
+                  <div className="max-h-60 overflow-y-auto">
+                    {user?.notifications?.length > 0 ? (
+                      user.notifications.slice(0, 5).map((notification, index) => (
+                        <div 
+                          key={index}
+                          className={`p-3 border-b border-gray-100 dark:border-gray-700 ${!notification.seen ? 'bg-blue-50 dark:bg-gray-700' : ''}`}
+                        >
+                          <div className="flex items-start gap-2">
+                            <div className={`p-1 rounded-full ${!notification.seen ? 'bg-blue-100 dark:bg-blue-900' : 'bg-gray-100 dark:bg-gray-600'}`}>
+                              {notification.type === 'order' ? (
+                                <Shirt className="w-4 h-4" />
+                              ) : notification.type === 'payment' ? (
+                                <CreditCard className="w-4 h-4" />
+                              ) : (
+                                <AlertCircle className="w-4 h-4" />
+                              )}
+                            </div>
+                            <div>
+                              <p className="text-sm">{notification.message}</p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {new Date(notification.createdAt).toLocaleString()}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-4 text-center text-gray-500">No notifications</div>
+                    )}
+                  </div>
+                  {user?.notifications?.length > 5 && (
+                    <div className="p-2 text-center border-t border-gray-200 dark:border-gray-700">
+                      <button 
+                        onClick={() => navigate('/notifications')}
+                        className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                      >
+                        View all notifications
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
-          )}
+            
+            {/* <button 
+              onClick={() => navigate('/profile')}
+              className="flex items-center space-x-2 focus:outline-none"
+            >
+              <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white">
+                {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
+              </div>
+              <span className="hidden md:inline">{user?.firstName}</span>
+            </button> */}
+          </div>
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6">
           {/* Hero Section */}
           <div className="bg-gradient-to-r from-blue-500 to-blue-700 rounded-xl p-6 text-white mb-6 relative overflow-hidden">
             <div className="relative z-10 max-w-lg">
@@ -475,16 +493,16 @@ export default function CustomerDashboard() {
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6">
             {/* Wallet Card */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6 flex items-center gap-4 hover:shadow-md transition-shadow">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-4 md:p-6 flex items-center gap-4 hover:shadow-md transition-shadow">
               <div className="p-3 bg-blue-100 dark:bg-blue-900 rounded-full">
                 <Wallet className="w-6 h-6 text-blue-600 dark:text-blue-400" />
               </div>
               <div className="flex-1">
                 <h2 className="text-gray-600 dark:text-gray-300 text-sm">Wallet Balance</h2>
                 <p className="text-xl font-bold text-gray-800 dark:text-white">
-                  ₦{profile?.walletBalance?.toLocaleString() ?? '0'}
+                  {formatCurrency(profile?.walletBalance || 0)}
                 </p>
               </div>
               <button 
@@ -497,7 +515,7 @@ export default function CustomerDashboard() {
             </div>
 
             {/* Loyalty Points Card */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6 flex items-center gap-4 hover:shadow-md transition-shadow">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-4 md:p-6 flex items-center gap-4 hover:shadow-md transition-shadow">
               <div className="p-3 bg-yellow-100 dark:bg-yellow-900 rounded-full">
                 <BadgePercent className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
               </div>
@@ -513,7 +531,7 @@ export default function CustomerDashboard() {
             </div>
 
             {/* Orders Card */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6 flex items-center gap-4 hover:shadow-md transition-shadow">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-4 md:p-6 flex items-center gap-4 hover:shadow-md transition-shadow">
               <div className="p-3 bg-indigo-100 dark:bg-indigo-900 rounded-full">
                 <Shirt className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
               </div>
@@ -526,7 +544,7 @@ export default function CustomerDashboard() {
             </div>
 
             {/* Next Pickup Card */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6 flex items-center gap-4 hover:shadow-md transition-shadow">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-4 md:p-6 flex items-center gap-4 hover:shadow-md transition-shadow">
               <div className="p-3 bg-green-100 dark:bg-green-900 rounded-full">
                 <Truck className="w-6 h-6 text-green-600 dark:text-green-400" />
               </div>
@@ -555,7 +573,7 @@ export default function CustomerDashboard() {
                 </svg>
               </button>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
               {['Wash', 'Iron', 'Dry Clean', 'Fold', 'Stain Removal', 'Other'].map((service) => (
                 <button
                   key={service}
@@ -565,7 +583,7 @@ export default function CustomerDashboard() {
                   <img 
                     src={serviceImages[service]} 
                     alt={service} 
-                    className="w-full h-24 object-cover transition-transform duration-300 group-hover:scale-105"
+                    className="w-full h-20 md:h-24 object-cover transition-transform duration-300 group-hover:scale-105"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
                   <div className="absolute bottom-0 left-0 right-0 p-2 text-white text-sm font-medium">
@@ -582,10 +600,10 @@ export default function CustomerDashboard() {
               <h3 className="text-lg font-semibold text-gray-700 dark:text-white">
                 Recent Orders
               </h3>
-              <div className="flex space-x-2">
+              <div className="flex space-x-1 md:space-x-2 overflow-x-auto py-1">
                 <button
                   onClick={() => setActiveTab('all')}
-                  className={`px-3 py-1 text-sm rounded-full ${activeTab === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'}`}
+                  className={`px-3 py-1 text-xs md:text-sm rounded-full whitespace-nowrap ${activeTab === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'}`}
                 >
                   All
                 </button>
@@ -593,7 +611,7 @@ export default function CustomerDashboard() {
                   <button
                     key={status}
                     onClick={() => setActiveTab(status)}
-                    className={`px-3 py-1 text-sm rounded-full capitalize ${activeTab === status ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'}`}
+                    className={`px-3 py-1 text-xs md:text-sm rounded-full capitalize whitespace-nowrap ${activeTab === status ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'}`}
                   >
                     {status}
                   </button>
@@ -631,22 +649,22 @@ export default function CustomerDashboard() {
                     <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                       <thead className="bg-gray-50 dark:bg-gray-700">
                         <tr>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             Order
                           </th>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             Items
                           </th>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             Status
                           </th>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             Total
                           </th>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             Date
                           </th>
-                          <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             Actions
                           </th>
                         </tr>
@@ -654,37 +672,39 @@ export default function CustomerDashboard() {
                       <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                         {filteredOrders.slice(0, 5).map((order) => (
                           <tr 
-                            key={order._id}
+                            key={order?._id}
                             className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
                             onClick={() => viewOrderDetails(order._id)}
                           >
-                            <td className="px-6 py-4 whitespace-nowrap">
+                            <td className="px-4 py-4 whitespace-nowrap">
                               <div className="text-sm font-medium text-gray-900 dark:text-white">
                                 #{order._id.slice(-6).toUpperCase()}
                               </div>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
+                            <td className="px-4 py-4 whitespace-nowrap">
                               <div className="text-sm text-gray-900 dark:text-white">
                                 {order.services.slice(0, 2).map(s => s.name).join(', ')}
                                 {order.services.length > 2 && ` +${order.services.length - 2} more`}
                               </div>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
+                            <td className="px-4 py-4 whitespace-nowrap">
                               <StatusBadge status={order.status} />
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                              ₦{order.totalAmount?.toFixed(2) ?? 0}
+                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                              {formatCurrency(order.totalAmount || 0)}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                               {formatDate(order.createdAt)}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
                               <div className="flex justify-end space-x-2">
                                 {order.status === 'pending' && (
                                   <button 
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      cancelOrder(order._id);
+                                      if (window.confirm('Are you sure you want to cancel this order?')) {
+                                        cancelOrder(order._id);
+                                      }
                                     }}
                                     className="text-red-600 hover:text-red-900 dark:hover:text-red-400 flex items-center gap-1 text-xs"
                                   >
@@ -692,10 +712,7 @@ export default function CustomerDashboard() {
                                   </button>
                                 )}
                                 <button 
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    reorder(order._id);
-                                  }}
+                                  onClick={(e) => reorder(order._id, e)}
                                   className="text-blue-600 hover:text-blue-900 dark:hover:text-blue-400 flex items-center gap-1 text-xs"
                                 >
                                   <Check className="w-3 h-3" /> Reorder

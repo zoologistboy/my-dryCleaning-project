@@ -22,6 +22,8 @@ export const ProfileProvider = ({ children }) => {
         },
       });
       setProfile(res.data.data);
+      // console.log(res.data.data);
+      
     } catch (err) {
       const errorMessage = err.response?.data?.message || "Failed to fetch profile";
       setError(errorMessage);

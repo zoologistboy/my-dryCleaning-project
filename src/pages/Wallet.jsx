@@ -1,248 +1,367 @@
-import { useState } from 'react';
-import { Wallet, CreditCard, Plus, Minus, ArrowUpDown } from 'lucide-react';
-
-const transactions = [
-  { id: 1, type: 'topup', amount: 5000, date: '2023-06-15', status: 'completed' },
-  { id: 2, type: 'payment', amount: -1200, date: '2023-06-10', status: 'completed' },
-  { id: 3, type: 'topup', amount: 3000, date: '2023-06-05', status: 'completed' },
-  { id: 4, type: 'payment', amount: -750, date: '2023-05-28', status: 'completed' },
-  { id: 5, type: 'refund', amount: 750, date: '2023-05-20', status: 'completed' }
-];
+import { useState, useEffect, useContext } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { AuthContext } from '../contexts/AuthContext';
+import { 
+  Wallet, CreditCard, Clock, Check, X, Plus, ArrowUpRight, 
+  ArrowDownLeft, Loader2, AlertCircle, CheckCircle 
+} from 'lucide-react';
+import axios from 'axios';
+import { toast } from 'sonner';
 
 export default function WalletPage() {
-  const [balance] = useState(6800);
-  const [activeTab, setActiveTab] = useState('transactions');
-  const [topupAmount, setTopupAmount] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
+  const { user, token } = useContext(AuthContext);
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();//You will be redirected to Flutterwave to complete your payment securely.
+  const [balance, setBalance] = useState(0);
+  const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [topUpAmount, setTopUpAmount] = useState('');
+  const [showTopUpModal, setShowTopUpModal] = useState(false);
+  const [processingPayment, setProcessingPayment] = useState(false);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    hasMore: false
+  });
 
-  const handleTopup = async (e) => {
-    e.preventDefault();
-    if (!topupAmount || isNaN(topupAmount) || topupAmount <= 0) {
-      setError('Please enter a valid amount');
-      return;
+  // Check for payment verification status
+  useEffect(() => {
+    const status = searchParams.get('status');
+    const verified = searchParams.get('verified');
+
+    if (status === 'success') {
+      toast.success('Payment successful! Wallet topped up');
+      fetchWalletData();
+    } else if (status === 'failed') {
+      toast.error('Payment failed. Please try again');
     }
-    setLoading(true);
+
+    if (verified === 'success') {
+      toast.success('Payment verified! Wallet topped up');
+      fetchWalletData();
+    } else if (verified === 'failed') {
+      toast.error('Payment verification failed');
+    } else if (verified === 'already') {
+      toast.info('Payment already processed');
+    } else if (verified === 'error') {
+      toast.error('Error verifying payment');
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+  if (!processingPayment) {
+    setShowTopUpModal(false);
+    setTopUpAmount('');
+  }
+}, [processingPayment]);
+
+  // Fetch wallet data
+  const fetchWalletData = async () => {
     try {
-      // Topup logic here
-      setMessage(`Successfully added ₦${parseFloat(topupAmount).toFixed(2)} to your wallet`);
-      setTopupAmount('');
-      setTimeout(() => setMessage(''), 3000);
-    } catch (err) {
-      setError(err.message);
+      setLoading(true);
+           const headers = {
+              Authorization: `Bearer ${token}`
+            };
+
+      const [balanceRes, transactionsRes] = await Promise.all([
+        axios.get(`${import.meta.env.VITE_BASE_URL}/api/wallet/balance`,{headers}),
+        axios.get(`${import.meta.env.VITE_BASE_URL}/api/wallet/transactions?page=${pagination.page}&limit=${pagination.limit}`,{headers})
+      ]);
+
+      console.log(balanceRes);
+      console.log(transactionsRes);
+      
+      
+
+      setBalance(balanceRes.data.data.balance);
+      setTransactions(transactionsRes.data.data);
+      setPagination(prev => ({
+        ...prev,
+        total: transactionsRes.data.meta.total,
+        hasMore: transactionsRes.data.meta.hasMore
+      }));
+    } catch (error) {
+      console.error('Error fetching wallet data:', error);
+      toast.error('Failed to load wallet data');
     } finally {
       setLoading(false);
     }
   };
 
+  useEffect(() => {
+    fetchWalletData();
+  }, [pagination.page, token]);
+
+  // Handle top up submission
+  const handleTopUp = async (e) => {
+    e.preventDefault();
+    try {
+      const amount = parseFloat(topUpAmount);
+      if (isNaN(amount)) {
+        toast.error('Please enter a valid amount');
+        return;
+      }
+
+      if (amount <= 0) {
+        toast.error('Amount must be greater than zero');
+        return;
+      }
+
+      setProcessingPayment(true);
+      const headers = {
+              Authorization: `Bearer ${token}`
+            };
+      const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/api/wallet/flutterwave/initiate`, {
+        amount,
+        paymentMethod: 'card' // Default to card for Flutterwave
+      },{headers}
+      );
+
+      // Redirect to Flutterwave payment page
+      window.location.href = response.data.paymentLink;
+    } catch (error) {
+      console.error('Top up error:', error);
+      toast.error(error.response?.data?.message || 'Failed to initiate payment');
+      setProcessingPayment(false);
+    }
+  };
+
+  // Format currency
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-NG', {
+      style: 'currency',
+      currency: 'NGN'
+    }).format(amount).replace('NGN', '₦');
+  };
+
+  // Format date
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  // Transaction icon based on type
+  const getTransactionIcon = (type) => {
+    switch (type) {
+      case 'topup':
+        return <ArrowDownLeft className="w-5 h-5 text-green-500" />;
+      case 'payment':
+        return <ArrowUpRight className="w-5 h-5 text-red-500" />;
+      case 'refund':
+        return <ArrowDownLeft className="w-5 h-5 text-blue-500" />;
+      default:
+        return <Wallet className="w-5 h-5 text-gray-500" />;
+    }
+  };
+
+  // Transaction status badge
+  const TransactionStatus = ({ status }) => {
+    const statusClasses = {
+      completed: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+      pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+      failed: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+    };
+
+    return (
+      <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${statusClasses[status]}`}>
+        {status}
+      </span>
+    );
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-6">
       <div className="max-w-4xl mx-auto">
-        <div className="mb-6">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">My Wallet</h1>
+          <button
+            onClick={() => setShowTopUpModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            disabled={processingPayment}
+          >
+            {processingPayment ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <>
+                <Plus className="w-5 h-5" />
+                Top Up
+              </>
+            )}
+          </button>
         </div>
-        
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow overflow-hidden mb-6">
-          <div className="p-6 bg-gradient-to-r from-blue-500 to-blue-700 text-white">
-            <div className="flex justify-between items-center">
-              <div>
-                <h2 className="text-lg font-medium">Wallet Balance</h2>
-                <p className="text-3xl font-bold mt-2">₦{balance.toLocaleString()}</p>
-              </div>
-              <div className="p-3 bg-white/20 rounded-full">
-                <Wallet className="w-8 h-8" />
+
+        {/* Balance Card */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-gray-600 dark:text-gray-300 text-sm mb-1">Current Balance</h2>
+              {loading ? (
+                <div className="h-8 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+              ) : (
+                <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                  {formatCurrency(balance)}
+                </p>
+              )}
+            </div>
+            <div className="p-3 bg-blue-100 dark:bg-blue-900 rounded-full">
+              <Wallet className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+            </div>
+          </div>
+        </div>
+
+        {/* Top Up Modal */}
+        {showTopUpModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg w-full max-w-md">
+              <div className="p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">Top Up Wallet</h2>
+                  <button
+                    onClick={() => {
+                      setShowTopUpModal(false);
+                      setProcessingPayment(false);
+                    }}
+                    className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+
+                <form onSubmit={handleTopUp}>
+                  <div className="mb-4">
+                    <label htmlFor="amount" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Amount (₦)
+                    </label>
+                    <input
+                      type="number"
+                      id="amount"
+                      value={topUpAmount}
+                      onChange={(e) => setTopUpAmount(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                      placeholder="Enter amount"
+                      min="1"
+                      step="0.01"
+                      required
+                    />
+                  </div>
+
+                  <div className="mb-6">
+                    <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg flex items-start gap-3">
+                      <AlertCircle className="w-5 h-5 text-blue-500 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                      <p className="text-sm text-gray-700 dark:text-gray-300">
+                        You will be redirected to Flutterwave to complete your payment securely.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowTopUpModal(false);
+                        setProcessingPayment(false);
+                      }}
+                      className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                      disabled={processingPayment}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center justify-center gap-2"
+                      disabled={processingPayment}
+                    >
+                      {processingPayment ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="w-4 h-4" />
+                          Proceed to Payment
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
               </div>
             </div>
           </div>
-          
+        )}
+
+        {/* Transactions Section */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow overflow-hidden">
           <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-            <nav className="flex -mb-px">
-              <button
-                onClick={() => setActiveTab('transactions')}
-                className={`py-3 px-4 text-center border-b-2 font-medium text-sm ${
-                  activeTab === 'transactions'
-                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                }`}
-              >
-                Transactions
-              </button>
-              <button
-                onClick={() => setActiveTab('topup')}
-                className={`py-3 px-4 text-center border-b-2 font-medium text-sm ${
-                  activeTab === 'topup'
-                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                }`}
-              >
-                Top Up
-              </button>
-              <button
-                onClick={() => setActiveTab('cards')}
-                className={`py-3 px-4 text-center border-b-2 font-medium text-sm ${
-                  activeTab === 'cards'
-                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                }`}
-              >
-                Payment Methods
-              </button>
-            </nav>
+            <h2 className="text-lg font-medium text-gray-900 dark:text-white">Recent Transactions</h2>
           </div>
-          
-          <div className="p-6">
-            {message && (
-              <div className="mb-4 p-4 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-100 rounded-md">
-                {message}
-              </div>
-            )}
-            {error && (
-              <div className="mb-4 p-4 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-100 rounded-md">
-                {error}
-              </div>
-            )}
-            
-            {activeTab === 'transactions' && (
-              <div className="space-y-4">
-                {transactions.length === 0 ? (
-                  <p className="text-center text-gray-500 dark:text-gray-400 py-4">
-                    No transactions yet
-                  </p>
-                ) : (
-                  transactions.map((txn) => (
-                    <div key={txn.id} className="flex justify-between items-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
-                      <div className="flex items-center">
-                        <div className={`p-2 rounded-full ${
-                          txn.amount > 0 
-                            ? 'bg-green-100 text-green-600 dark:bg-green-900/50 dark:text-green-400'
-                            : 'bg-red-100 text-red-600 dark:bg-red-900/50 dark:text-red-400'
-                        }`}>
-                          {txn.amount > 0 ? (
-                            <Plus className="w-5 h-5" />
-                          ) : (
-                            <Minus className="w-5 h-5" />
-                          )}
-                        </div>
-                        <div className="ml-4">
-                          <p className="font-medium capitalize">{txn.type}</p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">
-                            {new Date(txn.date).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
-                      <p className={`font-medium ${
-                        txn.amount > 0 
-                          ? 'text-green-600 dark:text-green-400'
-                          : 'text-red-600 dark:text-red-400'
-                      }`}>
-                        {txn.amount > 0 ? '+' : ''}{txn.amount.toFixed(2)}
-                      </p>
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
-            
-            {activeTab === 'topup' && (
-              <form onSubmit={handleTopup}>
-                <div className="space-y-6">
-                  <div>
-                    <label htmlFor="amount" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Amount to Top Up
-                    </label>
-                    <div className="mt-1 relative rounded-md shadow-sm">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <span className="text-gray-500 dark:text-gray-400">₦</span>
-                      </div>
-                      <input
-                        type="number"
-                        name="amount"
-                        id="amount"
-                        min="100"
-                        step="100"
-                        value={topupAmount}
-                        onChange={(e) => setTopupAmount(e.target.value)}
-                        className="pl-8 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-white dark:bg-gray-700 dark:text-white"
-                        placeholder="0.00"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-4 gap-2">
-                    {[500, 1000, 2000, 5000].map((amount) => (
-                      <button
-                        key={amount}
-                        type="button"
-                        onClick={() => setTopupAmount(amount)}
-                        className="py-2 px-3 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-                      >
-                        ₦{amount}
-                      </button>
-                    ))}
-                  </div>
-                  
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Payment Method
-                    </h3>
-                    <div className="space-y-2">
-                      <div className="flex items-center p-3 rounded-lg bg-gray-100 dark:bg-gray-700">
-                        <CreditCard className="w-5 h-5 text-blue-600 dark:text-blue-400 mr-3" />
-                        <span className="font-medium">Credit Card ending in 4242</span>
-                      </div>
-                      <button
-                        type="button"
-                        className="w-full py-2 px-3 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-center"
-                      >
-                        <Plus className="w-4 h-4 mr-1" />
-                        Add New Payment Method
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div className="pt-2">
-                    <button
-                      type="submit"
-                      disabled={loading || !topupAmount}
-                      className={`w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-                        loading || !topupAmount ? 'opacity-70 cursor-not-allowed' : ''
-                      }`}
-                    >
-                      {loading ? 'Processing...' : 'Top Up Wallet'}
-                    </button>
-                  </div>
-                </div>
-              </form>
-            )}
-            
-            {activeTab === 'cards' && (
-              <div className="space-y-6">
-                <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <CreditCard className="w-8 h-8 text-blue-600 dark:text-blue-400 mr-3" />
-                      <div>
-                        <p className="font-medium">Visa ending in 4242</p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Expires 12/25</p>
-                      </div>
-                    </div>
-                    <button className="text-sm text-red-600 dark:text-red-400 hover:text-red-500 dark:hover:text-red-300">
-                      Remove
-                    </button>
-                  </div>
-                </div>
-                
-                <button
-                  type="button"
-                  className="w-full py-3 px-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:border-gray-400 dark:hover:border-gray-500 flex items-center justify-center"
+
+          {loading ? (
+            <div className="p-6 flex justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+            </div>
+          ) : transactions.length === 0 ? (
+            <div className="p-6 text-center">
+              <Wallet className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No transactions yet</h3>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                Your transaction history will appear here
+              </p>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-200 dark:divide-gray-700">
+              {transactions.map((transaction) => (
+                <div 
+                  key={transaction._id} 
+                  className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                  onClick={() => navigate(`/transactions/${transaction._id}`)}
                 >
-                  <Plus className="w-5 h-5 mr-2" />
-                  Add New Payment Method
-                </button>
-              </div>
-            )}
-          </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-gray-100 dark:bg-gray-600 rounded-full">
+                        {getTransactionIcon(transaction.type)}
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900 dark:text-white capitalize">
+                          {transaction.type === 'topup' ? 'Wallet Top Up' : transaction.type}
+                        </p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          {formatDate(transaction.createdAt)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className={`font-medium ${transaction.type === 'topup' || transaction.type === 'refund' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                        {transaction.type === 'topup' || transaction.type === 'refund' ? '+' : '-'}
+                        {formatCurrency(transaction.amount)}
+                      </p>
+                      <div className="mt-1 flex justify-end">
+                        <TransactionStatus status={transaction.status} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {pagination.hasMore && (
+            <div className="p-4 border-t border-gray-200 dark:border-gray-700 text-center">
+              <button
+                onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
+                className="text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                Load more transactions
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

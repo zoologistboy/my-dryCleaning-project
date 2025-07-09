@@ -3,7 +3,7 @@ import React, { useContext, useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../contexts/AuthContext';
 import { ProfileContext } from '../contexts/ProfileContext';
-import { Sun, Moon, LogOut, Wallet, ChevronDown, Settings, User } from 'lucide-react';
+import { Sun, Moon, LogOut, Wallet, ChevronDown, Settings, User } from 'lucide-react';//wallet
 
 export default function Header() {
   const { user, logout } = useContext(AuthContext);
@@ -125,7 +125,7 @@ export default function Header() {
                 </button>
                 <button
                   onClick={() => {
-                    navigate('/wallet/topup');
+                    navigate('/wallet');
                     setDropdownOpen(false);
                   }}
                   className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"

@@ -1,6 +1,5 @@
 import { Outlet, Link } from 'react-router-dom';
 import { BellIcon, LogoutIcon, UserCircleIcon } from '@heroicons/react/outline';
-
 export default function AdminLayout() {
   return (
     <div className="flex h-screen bg-gray-100">
