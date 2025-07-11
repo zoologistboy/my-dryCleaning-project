@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 // import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
+import confetti from 'canvas-confetti';
 
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -37,6 +38,14 @@ import OrderHistory from './pages/OrderHistory';
 import OrderDetails from './pages/OrderDetails';
 import { SocketProvider } from '../src/contexts/SocketContext';
 import Dashboard from './pages/admin/Dashboard';
+import PaymentVerificationGuard from './components/PaymentVerificationGuard';
+import PaymentConfirmation from './pages/PaymentConfirmation';
+import UserSettings from './pages/Settings';
+import SchedulePickup from './pages/SchedulePickup';
+import Orders from './pages/admin/AdminOrders';
+import Users from './pages/admin/AdminUsers';
+import Inventory from './pages/admin/AdminInventory';
+import Analytics from './pages/admin/AdminAnalytic';
 
 
 
@@ -82,12 +91,25 @@ function App() {
            <Route path="/forgot-password" element={<ForgotPassword />} />
            <Route path="/home" element={<Home />} />
            <Route path="/support" element={<ContactUs />} />
-           <Route path="/schedule" element={<Schedule />} />
+           <Route path="/schedule" element={<SchedulePickup />} />
            <Route path="/confirmation" element={<Confirmation />} />
            <Route path="/orders" element={<OrderHistory/>} />
            <Route path="/wallet" element={<WalletPage />} />
            <Route path="/orders/:id" element={<OrderDetails />} />
+           <Route path="/orders/:id" element={<OrderDetails />} />
+           <Route path="/admin/orders" element={<Orders />} />
            <Route path="/admin/dashboard" element={<Dashboard />} />
+           <Route path="/admin/users" element={<Users />} />
+           <Route path="/admin/inventory/restock" element={<Inventory />} />
+           <Route path="/admin/analytics" element={<Analytics />} />
+           <Route 
+                path="/wallet/verify" 
+                element={
+           //<PaymentVerificationGuard>
+              <PaymentConfirmation />
+            //</PaymentVerificationGuard>
+          } />
+
            {/* <Route path="/wallet" element={<Wallet />} /> */}
 
 

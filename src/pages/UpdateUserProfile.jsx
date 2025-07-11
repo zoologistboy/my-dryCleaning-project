@@ -2,8 +2,12 @@ import { useContext, useState, useEffect } from "react";
 import { ProfileContext } from "../contexts/ProfileContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import triggerConfetti from "../components/Celebration"
+// import Celebration from "../components/Celebration";
+// import Confetti from "react-confetti";
 
 export default function UpdateProfile() {
+
   const navigate = useNavigate()
   const { profile, updateProfile, loading, error } = useContext(ProfileContext);
   const [formData, setFormData] = useState({
@@ -99,6 +103,10 @@ export default function UpdateProfile() {
       const from = location.state?.from || '/dashboard';
       navigate(from, { replace: true });
       toast.success("Profile updated successfully!")
+      
+      triggerConfetti("firework")
+      
+      
     } catch (err) {
       console.error("Update error:", err);
     }

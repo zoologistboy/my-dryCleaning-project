@@ -16,7 +16,7 @@ export const ProfileProvider = ({ children }) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await axios.get("http://localhost:3550/api/auth/profile", {
+      const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/api/auth/profile`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -47,7 +47,7 @@ export const ProfileProvider = ({ children }) => {
       }
 
       const res = await axios.put(
-        "http://localhost:3550/api/auth/update-profile",
+        `${import.meta.env.VITE_BASE_URL}/api/auth/update-profile`,
         data,
         {
           headers: {

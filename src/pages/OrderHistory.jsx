@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { Shirt, Clock, Check, X, Truck } from 'lucide-react';
+import axios from 'axios';
+import { AuthContext } from '../contexts/AuthContext';
 
 const statusIcons = {
   pending: <Clock className="w-4 h-4 text-yellow-500" />,
@@ -11,64 +13,63 @@ const statusIcons = {
 };
 
 export default function OrderHistory() {
+  const { token } = useContext(AuthContext);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
 
   useEffect(() => {
-    // Fetch orders from API
     const fetchOrders = async () => {
       try {
         setLoading(true);
-        // const res = await api.get('/orders');
-        // Mock data
-        const mockOrders = [
+        const res = await axios.get(
+          `${import.meta.env.VITE_BASE_URL}/api/orders/my-orders`,
           {
-            id: 'ORD-12345',
-            date: '2023-06-15',
-            items: ['Wash & Fold (5kg)', 'Ironing (3 items)'],
-            status: 'delivered',
-            total: 45.00,
-            tracking: 'DEL-98765'
-          },
-          {
-            id: 'ORD-12344',
-            date: '2023-06-10',
-            items: ['Dry Clean (2 items)'],
-            status: 'completed',
-            total: 30.00,
-            tracking: 'DEL-98764'
-          },
-          {
-            id: 'ORD-12343',
-            date: '2023-06-05',
-            items: ['Wash & Fold (3kg)', 'Stain Removal (1 item)'],
-            status: 'cancelled',
-            total: 28.00,
-            tracking: null
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
           }
-        ];
-        setOrders(mockOrders);
+        );
+
+        // console.log(res.data.data);
+        
+
+        const allOrders = res.data.data.map(order => ({
+          id: order._id,
+          date: order.createdAt,
+          items: (order.items || []).map(item => item.serviceName),
+          status: order.status?.toLowerCase(),
+          total: order.totalAmount,
+          tracking: order.trackingNumber || null
+        }));
+
+        // Sort orders by date (most recent first)
+        const sortedOrders = allOrders.sort(
+          (a, b) => new Date(b.date) - new Date(a.date)
+        );
+
+        setOrders(sortedOrders);
       } catch (err) {
         console.error('Error fetching orders:', err);
       } finally {
         setLoading(false);
       }
     };
-    
-    fetchOrders();
-  }, []);
 
-  const filteredOrders = activeTab === 'all' 
-    ? orders 
-    : orders.filter(order => order.status === activeTab);
+    fetchOrders();
+  }, [token]);
+
+  const filteredOrders =
+    activeTab === 'all'
+      ? orders
+      : orders.filter(order => order.status === activeTab);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Order History</h1>
-          <Link 
+          <Link
             to="/book"
             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-2"
           >
@@ -76,7 +77,7 @@ export default function OrderHistory() {
             New Order
           </Link>
         </div>
-        
+
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow overflow-hidden">
           <div className="border-b border-gray-200 dark:border-gray-700">
             <nav className="flex -mb-px">
@@ -90,7 +91,7 @@ export default function OrderHistory() {
               >
                 All Orders
               </button>
-              {['pending', 'processing', 'completed', 'delivered', 'cancelled'].map((status) => (
+              {['pending', 'processing', 'completed', 'delivered', 'cancelled'].map(status => (
                 <button
                   key={status}
                   onClick={() => setActiveTab(status)}
@@ -105,7 +106,7 @@ export default function OrderHistory() {
               ))}
             </nav>
           </div>
-          
+
           {loading ? (
             <div className="p-8 flex justify-center">
               <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
@@ -113,11 +114,13 @@ export default function OrderHistory() {
           ) : filteredOrders.length === 0 ? (
             <div className="p-8 text-center">
               <Shirt className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No orders found</h3>
+              <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">
+                No orders found
+              </h3>
               <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                {activeTab === 'all' 
-                  ? "You haven't placed any orders yet." 
-                  : `You don't have any ${activeTab} orders.`}
+                {activeTab === 'all'
+                  ? "You haven't placed any orders yet."
+                  : `No ${activeTab} orders yet.`}
               </p>
               <div className="mt-6">
                 <Link
@@ -131,8 +134,8 @@ export default function OrderHistory() {
             </div>
           ) : (
             <div className="divide-y divide-gray-200 dark:divide-gray-700">
-              {filteredOrders.map((order) => (
-                <div key={order.id} className="p-6 hover:bg-gray-50 dark:hover:bg-gray-700">
+              {filteredOrders.map(order => (
+                <Link  to={`/orders/${order.id}`} key={order.id} className="p-6 hover:bg-gray-50 dark:hover:bg-gray-700">
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between">
                     <div className="flex-1">
                       <div className="flex items-center space-x-4">
@@ -157,19 +160,21 @@ export default function OrderHistory() {
                     <div className="mt-4 md:mt-0 md:ml-6">
                       <div className="flex flex-col items-end">
                         <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                          ₦{order.total.toFixed(2)}
+                          ₦{order.total}
                         </p>
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${
-                          order.status === 'pending' 
-                            ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                            : order.status === 'processing'
-                            ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-                            : order.status === 'completed'
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                            : order.status === 'delivered'
-                            ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
-                            : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                        }`}>
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${
+                            order.status === 'pending'
+                              ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                              : order.status === 'processing'
+                              ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                              : order.status === 'completed'
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                              : order.status === 'delivered'
+                              ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
+                              : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                          }`}
+                        >
                           {order.status}
                         </span>
                         {order.tracking && (
@@ -183,7 +188,7 @@ export default function OrderHistory() {
                       </div>
                     </div>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           )}

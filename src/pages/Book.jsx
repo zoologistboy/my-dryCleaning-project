@@ -171,9 +171,9 @@ export default function BookService() {
       if (paymentMethod === 'wallet' && user) {
         const updatedUser = {
           ...user,
-          walletBalance: user.walletBalance - calculateTotal()
+          walletBalance: profile.walletBalance - calculateTotal()
         };
-        profile(updatedUser);
+        await profile;
       }
 
       toast.success('Order placed successfully!');

@@ -18,6 +18,7 @@ import service6 from '../assets/folded.jpg';
 import { toast } from 'sonner';
 
 export default function CustomerDashboard() {
+  const [confirmCancel, setConfirmCancel] = useState(null); // will hold order ID to cancel
   const { profile } = useContext(ProfileContext);
   const { user, token, logout } = useContext(AuthContext);
   const navigate = useNavigate();
@@ -67,7 +68,7 @@ export default function CustomerDashboard() {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`http://localhost:3550/api/orders/my-orders`, {
+      const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/api/orders/my-orders`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       // console.log(res.data.data);
@@ -94,7 +95,7 @@ export default function CustomerDashboard() {
   
 
   const orderCount = orders.length;
-  const unreadNotifications = user?.notifications?.filter(n => !n.seen).length || 0;
+  const unreadNotifications = profile?.notifications?.filter(n => !n.seen).length || 0;
 
   // Status badge component
   const StatusBadge = ({ status }) => {
@@ -134,7 +135,7 @@ export default function CustomerDashboard() {
   // Cancel order function
   const cancelOrder = async (orderId) => {
     try {
-      await axios.patch(`${process.env.REACT_APP_API_URL}/api/orders/${orderId}/cancel`, {}, {
+      await axios.patch(`${import.meta.env.VITE_BASE_URL}/api/orders/${orderId}/cancel`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       toast.success('Order cancelled successfully');
@@ -197,7 +198,7 @@ export default function CustomerDashboard() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
       {/* Sidebar - Desktop */}
-      <aside className="hidden md:block w-64 bg-white dark:bg-gray-800 shadow-md">
+      <aside className="hidden md:block w-64 bg-white dark:bg-gray-800 shadow-md fixed top-55 left-3 h-full z-30">
         <div className="p-4 flex items-center justify-center border-b border-gray-200 dark:border-gray-700">
           <img src={laundryBasket} alt="Logo" className="h-10 mr-2" />
         </div>
@@ -364,7 +365,7 @@ export default function CustomerDashboard() {
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden ml-64" >
         {/* Header */}
         <header className="bg-white dark:bg-gray-800 shadow p-4 flex justify-between items-center">
           <div className="flex items-center">
@@ -407,8 +408,8 @@ export default function CustomerDashboard() {
                     </button>
                   </div>
                   <div className="max-h-60 overflow-y-auto">
-                    {user?.notifications?.length > 0 ? (
-                      user.notifications.slice(0, 5).map((notification, index) => (
+                    {profile?.notifications?.length > 0 ? (
+                      profile?.notifications.slice(-5).reverse().map((notification, index) => (
                         <div 
                           key={index}
                           className={`p-3 border-b border-gray-100 dark:border-gray-700 ${!notification.seen ? 'bg-blue-50 dark:bg-gray-700' : ''}`}
@@ -433,10 +434,10 @@ export default function CustomerDashboard() {
                         </div>
                       ))
                     ) : (
-                      <div className="p-4 text-center text-gray-500">No notifications</div>
+                      <div className="p-4 text-center text-gray-500">No notifications</div>//wallet balance
                     )}
                   </div>
-                  {user?.notifications?.length > 5 && (
+                  {profile?.notifications?.length > 5 && (
                     <div className="p-2 text-center border-t border-gray-200 dark:border-gray-700">
                       <button 
                         onClick={() => navigate('/notifications')}
@@ -506,7 +507,7 @@ export default function CustomerDashboard() {
                 </p>
               </div>
               <button 
-                onClick={() => navigate('/wallet/topup')}
+                onClick={() => navigate('/wallet')}
                 className="p-2 bg-blue-100 dark:bg-gray-700 text-blue-600 dark:text-blue-400 rounded-full hover:bg-blue-200 dark:hover:bg-gray-600"
                 title="Top Up"
               >
@@ -699,25 +700,27 @@ export default function CustomerDashboard() {
                             <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
                               <div className="flex justify-end space-x-2">
                                 {order.status === 'pending' && (
-                                  <button 
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      if (window.confirm('Are you sure you want to cancel this order?')) {
-                                        cancelOrder(order._id);
-                                      }
-                                    }}
-                                    className="text-red-600 hover:text-red-900 dark:hover:text-red-400 flex items-center gap-1 text-xs"
-                                  >
-                                    <X className="w-3 h-3" /> Cancel
-                                  </button>
+                                  <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setConfirmCancel(order._id); // Open modal
+                                      }}
+                                      className="text-red-600 hover:text-red-800 dark:hover:text-red-400 flex items-center gap-1 text-xs font-medium"
+                                    >
+                                      <X className="w-3 h-3" />
+                                      Cancel
+                                    </button>
+
                                 )}
-                                <button 
+                                {/* <button 
                                   onClick={(e) => reorder(order._id, e)}
                                   className="text-blue-600 hover:text-blue-900 dark:hover:text-blue-400 flex items-center gap-1 text-xs"
                                 >
                                   <Check className="w-3 h-3" /> Reorder
-                                </button>
+                                </button> */}
                               </div>
+                              
+
                             </td>
                           </tr>
                         ))}
@@ -740,6 +743,39 @@ export default function CustomerDashboard() {
           </section>
         </main>
       </div>
+      {confirmCancel && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-full max-w-sm">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                    Cancel Order
+                  </h2>
+                  <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+                    Are you sure you want to cancel this order? This action cannot be undone.
+                  </p>
+                  <div className="flex justify-end space-x-2">
+                    <button
+                      onClick={() => setConfirmCancel(null)}
+                      className="px-4 py-1 text-sm rounded-md bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white"
+                    >
+                      No
+                    </button>
+                    <button
+                      onClick={() => {
+                        cancelOrder(confirmCancel);
+                        setConfirmCancel(null);
+                      }}
+                      className="px-4 py-1 text-sm rounded-md bg-red-600 hover:bg-red-700 text-white"
+                    >
+                      Yes, Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+                  )}
+
     </div>
+    
+
+    
   );
 }

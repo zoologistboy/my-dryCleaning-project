@@ -1,8 +1,9 @@
 import { useParams } from 'react-router-dom';
-import { Shirt, Clock, Check, X, Truck, MapPin, Calendar, CreditCard, Loader2 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { Shirt, Clock, Check, X, Truck, MapPin, Calendar, CreditCard, Loader2, Wallet } from 'lucide-react';
+import { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
+import { AuthContext } from '../contexts/AuthContext';
 
 const statusStages = [
   { id: 'pending', name: 'Order Received', icon: <Clock className="w-5 h-5" /> },
@@ -13,6 +14,7 @@ const statusStages = [
 ];
 
 export default function OrderDetails() {
+  const { token} = useContext(AuthContext)//wallet
   const { id } = useParams();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -41,7 +43,7 @@ export default function OrderDetails() {
     if (id) {
       fetchOrder();
     }
-  }, [id]);
+  }, [token]);
 
   if (loading) {
     return (

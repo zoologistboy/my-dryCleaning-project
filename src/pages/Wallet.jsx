@@ -1,15 +1,19 @@
 import { useState, useEffect, useContext } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AuthContext } from '../contexts/AuthContext';
+// import { useAuth } from '../contexts/AuthContext';
+import PaymentConfirmation from '../pages/PaymentConfirmation';
 import { 
   Wallet, CreditCard, Clock, Check, X, Plus, ArrowUpRight, 
   ArrowDownLeft, Loader2, AlertCircle, CheckCircle 
 } from 'lucide-react';
 import axios from 'axios';
-import { toast } from 'sonner';
+import { toast } from 'sonner'; //proceed to payment
+// import useWallet from '../components/useWallet';
 
 export default function WalletPage() {
-  const { user, token } = useContext(AuthContext);
+  // const { balance, transactions, loading, pagination, setPagination, fetchWalletData } = useWallet(token);
+  const { user, token } = useContext(AuthContext);//successful
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();//You will be redirected to Flutterwave to complete your payment securely.
   const [balance, setBalance] = useState(0);
@@ -94,38 +98,57 @@ export default function WalletPage() {
   }, [pagination.page, token]);
 
   // Handle top up submission
-  const handleTopUp = async (e) => {
-    e.preventDefault();
-    try {
-      const amount = parseFloat(topUpAmount);
-      if (isNaN(amount)) {
-        toast.error('Please enter a valid amount');
-        return;
-      }
-
-      if (amount <= 0) {
-        toast.error('Amount must be greater than zero');
-        return;
-      }
-
-      setProcessingPayment(true);
-      const headers = {
-              Authorization: `Bearer ${token}`
-            };
-      const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/api/wallet/flutterwave/initiate`, {
-        amount,
-        paymentMethod: 'card' // Default to card for Flutterwave
-      },{headers}
-      );
-
-      // Redirect to Flutterwave payment page
-      window.location.href = response.data.paymentLink;
-    } catch (error) {
-      console.error('Top up error:', error);
-      toast.error(error.response?.data?.message || 'Failed to initiate payment');
-      setProcessingPayment(false);
+ const handleTopUp = async (e) => {
+  e.preventDefault();
+  try {
+    const amount = parseFloat(topUpAmount);
+    
+    // Validation
+    if (isNaN(amount) || amount < 100) {
+      toast.error('Amount must be at least ₦100');
+      return;
     }
-  };
+
+    setProcessingPayment(true);
+    
+    const headers = {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
+
+    const response = await axios.post(
+      `${import.meta.env.VITE_BASE_URL}/api/wallet/flutterwave/initiate`,
+      { amount, paymentMethod: 'card' },
+      { headers }
+    );
+    console.log(response.data.link);
+    window.location.href = response.data.link;
+
+    // if (response.data === "success") {
+    //   window.location.href = response.data.link;
+    // } else {
+    //   throw new Error(response.data.message || 'Failed to get payment link');
+    // }
+
+  } catch (error) {
+    console.error('Top up error:', error);
+    setProcessingPayment(false);
+    
+    toast.error(
+      error.response?.data?.message || 
+      error.message || 
+      'Failed to initiate payment'
+    );
+    
+    // Log detailed error in development
+    if (import.meta.env.DEV) {
+      console.log('Full error details:', {
+        config: error.config,
+        response: error.response
+      });
+    }
+  }
+};
 
   // Format currency
   const formatCurrency = (amount) => {
@@ -217,7 +240,7 @@ export default function WalletPage() {
         </div>
 
         {/* Top Up Modal */}
-        {showTopUpModal && (
+        {/* {showTopUpModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg w-full max-w-md">
               <div className="p-6">
@@ -295,7 +318,95 @@ export default function WalletPage() {
               </div>
             </div>
           </div>
-        )}
+        )} */}
+        {showTopUpModal && (
+  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg w-full max-w-md animate-in fade-in-zoom">
+      <div className="p-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Top Up Wallet</h2>
+          <button
+            onClick={() => !processingPayment && setShowTopUpModal(false)}
+            className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 disabled:opacity-50"
+            disabled={processingPayment}
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        <form onSubmit={handleTopUp}>
+          <div className="mb-4">
+            <label htmlFor="amount" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Amount (₦)
+            </label>
+            <div className="relative">
+              <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+                ₦
+              </span>
+              <input
+                type="number"
+                id="amount"
+                value={topUpAmount}
+                onChange={(e) => setTopUpAmount(e.target.value)}
+                className="w-full pl-8 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                placeholder="0.00"
+                min="100" // Minimum top-up amount
+                step="100" // Increment by 100 Naira
+                required
+                disabled={processingPayment}
+              />
+            </div>
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Minimum amount: ₦100
+            </p>
+          </div>
+
+          <div className="mb-6">
+            <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-blue-500 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+              <p className="text-sm text-gray-700 dark:text-gray-300">
+                You will be redirected to Flutterwave to complete your payment securely.
+                {processingPayment && (
+                  <span className="block mt-1 text-blue-600 dark:text-blue-400">
+                    Redirecting to payment gateway...
+                  </span>
+                )}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => setShowTopUpModal(false)}
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+              disabled={processingPayment}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={processingPayment || !topUpAmount}
+            >
+              {processingPayment ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="w-4 h-4" />
+                  Proceed to Payment
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+)}
 
         {/* Transactions Section */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow overflow-hidden">

@@ -35,7 +35,7 @@ export default function Dashboard() {
       setError(null);
 
       const headers = {
-        'Authorization': `Bearer ${token}`,
+        'Authorization': `Bearer ${token}`,//active users
         'Cache-Control': 'no-cache',
         'Pragma': 'no-cache',
         'Expires': '0'
@@ -55,8 +55,13 @@ export default function Dashboard() {
             headers,
             cache: 'no-store'
           });
+          
+          
+          
 
           const text = await res.text();
+          // console.log(text);
+          
           if (!res.ok) {
             throw new Error(`Failed to fetch ${url}: ${res.status} ${res.statusText}\n${text}`);
           }
@@ -154,7 +159,7 @@ export default function Dashboard() {
           />
           <StatsCard
             title="Active Users"
-            value={data.stats.activeUsers}
+            value={data.stats?.totalUsers}
             trend={data.stats.userTrend}
             icon={<Users className="w-5 h-5" />}
           />
@@ -202,7 +207,7 @@ export default function Dashboard() {
               headers={['Date', 'User', 'Amount', 'Type', 'Status']}
               data={data.recentTransactions.map(tx => ({
                 date: new Date(tx.createdAt).toLocaleDateString(),
-                user: tx.user?.name || 'N/A',
+                user: tx.user?.fullName || 'N/A',
                 amount: `₦${tx.amount.toLocaleString()}`,
                 type: tx.type,
                 status: tx.status,
@@ -218,7 +223,7 @@ export default function Dashboard() {
               headers={['ID', 'Customer', 'Status', 'Amount']}
               data={data.recentOrders.map(order => ({
                 id: order._id.slice(-6).toUpperCase(),
-                customer: order.user?.name || 'N/A',
+                customer: order.user?.fullName || 'N/A',
                 status: order.status,
                 amount: `₦${order.totalAmount.toLocaleString()}`,
                 rawData: order
