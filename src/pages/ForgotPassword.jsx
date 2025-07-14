@@ -17,7 +17,7 @@ export default function ForgotPassword() {
     try {
       
       // Password reset logic here
-      await axios.post('http://localhost:3550/api/auth/forgot-password', { email });
+      await axios.post(`${import.meta.env.VITE_BASE_URL}/api/auth/forgot-password`, { email });
       setMessage('Password reset link has been sent to your email');
       setTimeout(() => navigate('/signin'), 3000);
     } catch (err) {

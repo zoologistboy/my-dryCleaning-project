@@ -142,7 +142,7 @@ export default function WalletPage() {
     
     // Log detailed error in development
     if (import.meta.env.DEV) {
-      console.log('Full error details:', {
+      console.log('Full error details:', {//localhost
         config: error.config,
         response: error.response
       });

@@ -13,7 +13,7 @@ const Analytics = () => {
   const { token } = useContext(AuthContext);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [timeRange, setTimeRange] = useState('monthly');
+  const [timeRange, setTimeRange] = useState('monthly');//local
   const [dateRange, setDateRange] = useState([
     dayjs().subtract(6, 'month'),
     dayjs()

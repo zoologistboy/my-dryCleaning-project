@@ -11,7 +11,7 @@ const timeSlots = [
   '4:00 PM - 6:00 PM'
 ];
 
-export default function SchedulePickup() {
+export default function SchedulePickup() {//localhost
   const navigate = useNavigate();
   const [pickupDate, setPickupDate] = useState('');
   const [pickupTime, setPickupTime] = useState('');

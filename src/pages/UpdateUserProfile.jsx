@@ -99,7 +99,7 @@ export default function UpdateProfile() {
     if (!isFormValid) return;
     
     try {
-      await updateProfile(formData, profilePicture);
+      await updateProfile(formData, profilePicture);//localhost
       const from = location.state?.from || '/dashboard';
       navigate(from, { replace: true });
       toast.success("Profile updated successfully!")

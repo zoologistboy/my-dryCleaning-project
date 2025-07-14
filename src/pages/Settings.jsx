@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
-export default function UserSettings() {
+export default function UserSettings() {//localhost
   const navigate = useNavigate()
   const { user, token } = useContext(AuthContext);
   const { profile } = useContext(ProfileContext);

@@ -21,11 +21,11 @@ export default function OrderDetails() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchOrder = async () => {
+    const fetchOrder = async () => {//localhost
       try {
         setLoading(true);
         setError(null);
-        const response = await axios.get(`http://localhost:3550/api/orders/${id}`, {
+        const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/api/orders/${id}`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           }

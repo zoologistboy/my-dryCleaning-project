@@ -12,7 +12,7 @@ import {
 import { toast } from 'sonner';
 
 const statusStages = [
-  { id: 'pending', label: 'Pending', icon: <Clock className="w-5 h-5" /> },
+  { id: 'pending', label: 'Pending', icon: <Clock className="w-5 h-5" /> },//localhost
   { id: 'processing', label: 'Processing', icon: <RefreshCw className="w-5 h-5" /> },
   { id: 'in-progress', label: 'In Progress', icon: <Truck className="w-5 h-5" /> },
   { id: 'completed', label: 'Completed', icon: <CheckCircle className="w-5 h-5" /> },
@@ -27,7 +27,7 @@ export default function OrderTracking() {
   useEffect(() => {
     const fetchOrder = async () => {
       try {
-        const response = await axios.get(`http://localhost:3550/api/orders/${orderId}`);
+        const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/api/orders/${orderId}`);
         console.log(response.data.data);
         
         setOrder(response.data.data);

@@ -20,7 +20,7 @@ export default function EmailSent() {
 
     setResending(true);
     try {
-      const res = await axios.post('http://localhost:3550/api/auth/resend-verification', { email });
+      const res = await axios.post(`${import.meta.env.VITE_BASE_URL}/api/auth/resend-verification`, { email });
       setMessage(res.data?.message || 'Verification email resent!');
       setCooldown(60); // ⏱️ start 60s countdown
     } catch (error) {

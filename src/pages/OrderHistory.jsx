@@ -12,7 +12,7 @@ const statusIcons = {
   delivered: <Truck className="w-4 h-4 text-purple-500" />
 };
 
-export default function OrderHistory() {
+export default function OrderHistory() {//localhost
   const { token } = useContext(AuthContext);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);

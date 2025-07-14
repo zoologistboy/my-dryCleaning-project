@@ -12,11 +12,11 @@ export default function SignUp() {
     phoneNumber: '',
     role: 'user',
   });
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false);//localhost
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const backendUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3550';
+  const backendUrl = import.meta.env.VITE_API_BASE_URL;
 
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));

@@ -159,7 +159,7 @@ export default function BookService() {
         totalAmount: calculateTotal()
       };
 
-      const response = await axios.post('http://localhost:3550/api/orders', orderData, {
+      const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/api/orders`, orderData, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
