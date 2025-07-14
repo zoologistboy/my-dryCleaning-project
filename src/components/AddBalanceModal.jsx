@@ -17,7 +17,7 @@ export default function AddBalanceModal({ isOpen, onClose }) {
     setError('');
     try {
       const res = await axios.post(
-        'http://localhost:3550/api/wallet/add',
+        `${import.meta.env.VITE_BASE_URL}/api/wallet/add`,
         { amount: Number(amount) },
         { headers: { Authorization: `Bearer ${token}` } }
       );

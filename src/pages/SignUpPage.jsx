@@ -16,7 +16,7 @@ export default function SignUp() {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const backendUrl = import.meta.env.VITE_API_BASE_URL;
+  const backendUrl = import.meta.env.VITE_BASE_URL;
 
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
