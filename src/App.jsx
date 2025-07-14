@@ -102,6 +102,7 @@ function App() {
            <Route path="/admin/users" element={<Users />} />
            <Route path="/admin/inventory/restock" element={<Inventory />} />
            <Route path="/admin/analytics" element={<Analytics />} />
+           <Route path="/settings" element={<UserSettings />} />
            <Route 
                 path="/wallet/verify" 
                 element={
