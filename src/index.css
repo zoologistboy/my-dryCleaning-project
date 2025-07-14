@@ -83,5 +83,9 @@ html {
   @apply flex items-center w-full px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700;
 }
 
+body.menu-open {
+  overflow: hidden;
+}
+
 
 

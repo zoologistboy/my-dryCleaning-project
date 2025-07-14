@@ -196,9 +196,11 @@ export default function CustomerDashboard() {
   };
 
   return (
+    
+
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
       {/* Sidebar - Desktop */}
-      <aside className="hidden md:block w-64 bg-white dark:bg-gray-800 shadow-md fixed top-55 left-3 h-full z-30">
+      <aside className="hidden md:block w-64 bg-white dark:bg-gray-800 shadow-md fixed top-55 left- h-full z-30">
         <div className="p-4 flex items-center justify-center border-b border-gray-200 dark:border-gray-700">
           <img src={laundryBasket} alt="Logo" className="h-10 mr-2" />
         </div>
@@ -365,7 +367,8 @@ export default function CustomerDashboard() {
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden ml-64" >
+      
+      <div className="flex-1 flex flex-col overflow-hidden md:ml-64">
         {/* Header */}
         <header className="bg-white dark:bg-gray-800 shadow p-4 flex justify-between items-center">
           <div className="flex items-center">
@@ -464,7 +467,7 @@ export default function CustomerDashboard() {
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">
+        <main className="flex-1 overflow-y-auto pt-16 pb-4 px-4 md:px-6">
           {/* Hero Section */}
           <div className="bg-gradient-to-r from-blue-500 to-blue-700 rounded-xl p-6 text-white mb-6 relative overflow-hidden">
             <div className="relative z-10 max-w-lg">
@@ -774,8 +777,6 @@ export default function CustomerDashboard() {
                   )}
 
     </div>
-    
-
     
   );
 }

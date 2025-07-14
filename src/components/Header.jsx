@@ -21,6 +21,18 @@ export default function Header() {
   }, [dark]);
 
   useEffect(() => {
+  if (mobileMenuOpen) {
+    document.body.classList.add('menu-open');
+  } else {
+    document.body.classList.remove('menu-open');
+  }
+  
+  return () => {
+    document.body.classList.remove('menu-open');
+  };
+}, [mobileMenuOpen]);
+
+  useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setDropdownOpen(false);
@@ -36,8 +48,8 @@ export default function Header() {
   };
 
   return (
-    <header className="bg-white dark:bg-gray-900 shadow-md px-4 md:px-6 py-4 fixed top-0 w-full z-50">
-      <div className="flex justify-between items-center">
+    <header className="bg-white dark:bg-gray-900 shadow-md px-4 md:px-6 py-4 fixed top-0 w-full z-50 h-16">
+      <div className="flex justify-between items-center h-full">
         {/* Brand */}
         <Link to={user ? "/dashboard" : "/"} className="text-2xl font-bold text-blue-600 dark:text-white">
           DryCleanPro
@@ -47,6 +59,8 @@ export default function Header() {
         <button
           className="md:hidden text-gray-700 dark:text-gray-200"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          aria-label="Toggle menu"
+          aria-expanded={mobileMenuOpen}
         >
           <Menu className="h-6 w-6" />
         </button>
@@ -57,6 +71,7 @@ export default function Header() {
           <button
             onClick={() => setDark(!dark)}
             className="p-2 rounded-full bg-gray-200 dark:bg-gray-700"
+            aria-label={`Switch to ${dark ? 'light' : 'dark'} mode`}
           >
             {dark ? <Sun className="w-5 h-5 text-yellow-400" /> : <Moon className="w-5 h-5 text-gray-800" />}
           </button>
@@ -64,7 +79,12 @@ export default function Header() {
           {/* Authenticated Menu */}
           {user ? (
             <div className="relative" ref={dropdownRef}>
-              <button className="flex items-center gap-2" onClick={() => setDropdownOpen(!dropdownOpen)}>
+              <button 
+                className="flex items-center gap-2" 
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+                aria-label="User menu"
+                aria-expanded={dropdownOpen}
+              >
                 <div className="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-600 overflow-hidden">
                   {profile?.profilePicture ? (
                     <img src={profile.profilePicture} alt="Profile" className="w-full h-full object-cover" />
@@ -100,16 +120,28 @@ export default function Header() {
                     </div>
                   </div>
 
-                  <button onClick={() => { navigate('/profile'); setDropdownOpen(false); }} className="dropdown-item">
+                  <button 
+                    onClick={() => { navigate('/profile'); setDropdownOpen(false); }} 
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
+                  >
                     <User className="w-4 h-4 mr-2" /> View Profile
                   </button>
-                  <button onClick={() => { navigate('/wallet'); setDropdownOpen(false); }} className="dropdown-item">
+                  <button 
+                    onClick={() => { navigate('/wallet'); setDropdownOpen(false); }} 
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
+                  >
                     <Wallet className="w-4 h-4 mr-2" /> Top Up Balance
                   </button>
-                  <button onClick={() => { navigate('/settings'); setDropdownOpen(false); }} className="dropdown-item">
+                  <button 
+                    onClick={() => { navigate('/settings'); setDropdownOpen(false); }} 
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
+                  >
                     <Settings className="w-4 h-4 mr-2" /> Settings
                   </button>
-                  <button onClick={handleLogout} className="dropdown-item text-red-600">
+                  <button 
+                    onClick={handleLogout} 
+                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
+                  >
                     <LogOut className="w-4 h-4 mr-2" /> Logout
                   </button>
                 </div>
@@ -131,27 +163,80 @@ export default function Header() {
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden mt-4 space-y-3 text-gray-700 dark:text-gray-300">
-          <div className="flex justify-end">
+        <div className="md:hidden fixed top-16 left-0 right-0 bg-white dark:bg-gray-900 shadow-lg z-40 p-4">
+          <div className="flex justify-end mb-4">
             <button onClick={() => setDark(!dark)} className="p-2 rounded-full bg-gray-200 dark:bg-gray-700">
               {dark ? <Sun className="w-5 h-5 text-yellow-400" /> : <Moon className="w-5 h-5 text-gray-800" />}
             </button>
           </div>
           {user ? (
-            <>
-              <Link to="/profile" onClick={() => setMobileMenuOpen(false)} className="block">Profile</Link>
-              <Link to="/wallet" onClick={() => setMobileMenuOpen(false)} className="block">Top Up</Link>
-              <Link to="/settings" onClick={() => setMobileMenuOpen(false)} className="block">Settings</Link>
-              <button onClick={handleLogout} className="block text-red-600">Logout</button>
-            </>
+            <div className="space-y-3">
+              <Link 
+                to="/profile" 
+                onClick={() => setMobileMenuOpen(false)} 
+                className="block py-2 px-4 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+              >
+                Profile
+              </Link>
+              <Link 
+                to="/wallet" 
+                onClick={() => setMobileMenuOpen(false)} 
+                className="block py-2 px-4 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+              >
+                Top Up
+              </Link>
+              <Link 
+                to="/settings" 
+                onClick={() => setMobileMenuOpen(false)} 
+                className="block py-2 px-4 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+              >
+                Settings
+              </Link>
+              <button 
+                onClick={handleLogout} 
+                className="w-full text-left py-2 px-4 rounded-lg text-red-600 hover:bg-gray-100 dark:hover:bg-gray-800"
+              >
+                Logout
+              </button>
+            </div>
           ) : (
-            <>
-              <a href="/#services" className="block">Services</a>
-              <a href="/#pricing" className="block">Pricing</a>
-              <a href="/#contactUs" className="block">Contact</a>
-              <Link to="/signin" className="btn-primary block text-center">Sign In</Link>
-              <Link to="/signup" className="btn-secondary block text-center">Sign Up</Link>
-            </>
+            <div className="space-y-3">
+              <a 
+                href="/#services" 
+                onClick={() => setMobileMenuOpen(false)} 
+                className="block py-2 px-4 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+              >
+                Services
+              </a>
+              <a 
+                href="/#pricing" 
+                onClick={() => setMobileMenuOpen(false)} 
+                className="block py-2 px-4 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+              >
+                Pricing
+              </a>
+              <a 
+                href="/#contactUs" 
+                onClick={() => setMobileMenuOpen(false)} 
+                className="block py-2 px-4 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+              >
+                Contact
+              </a>
+              <Link 
+                to="/signin" 
+                onClick={() => setMobileMenuOpen(false)} 
+                className="btn-primary block text-center py-2"
+              >
+                Sign In
+              </Link>
+              <Link 
+                to="/signup" 
+                onClick={() => setMobileMenuOpen(false)} 
+                className="btn-secondary block text-center py-2"
+              >
+                Sign Up
+              </Link>
+            </div>
           )}
         </div>
       )}
